@@ -25,7 +25,7 @@ jobs:
     name: Tests, clippy, bench
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -54,7 +54,7 @@ jobs:
           - arch: aarch64
             target: aarch64-unknown-linux-musl
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -74,7 +74,7 @@ jobs:
           ls -l "$bin"
           if [ "${{ matrix.arch }}" = aarch64 ]; then qemu-aarch64-static "$bin" --version; else "$bin" --version; fi
           mkdir -p out && cp "$bin" out/agenda-linux-${{ matrix.arch }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: cli-linux-${{ matrix.arch }}
           path: out/*
@@ -85,12 +85,12 @@ jobs:
     needs: test
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: app/src-tauri
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Dépendances système
@@ -111,7 +111,7 @@ jobs:
           cp $b/agenda-app out/agenda-app-linux-x86_64-ubuntu
           ls -l out
           dpkg-deb -I out/Agenda_amd64.deb
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: desktop-linux
           path: out/*
@@ -127,7 +127,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed base-devel git rustup nodejs npm webkit2gtk-4.1 gtk3 librsvg xorg-server-xvfb file
           rustup default stable
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: actions/cache@v4
         with:
           path: |
@@ -142,7 +142,7 @@ jobs:
           mkdir -p ../out
           cp src-tauri/target/release/agenda-app ../out/agenda-app-linux-x86_64
           ls -l ../out
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: cli-linux-x86_64
           path: out
@@ -173,7 +173,7 @@ jobs:
           set +e; timeout 5 xvfb-run -a agenda-app; code=$?; set -e
           echo "code de sortie : $code (124 = toujours vivant après 5 s, attendu)"
           test "$code" = 124
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: desktop-arch
           path: |
@@ -186,7 +186,7 @@ jobs:
     needs: test
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
@@ -195,7 +195,7 @@ jobs:
           workspaces: |
             . -> target
             app/src-tauri -> target
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: CLI
@@ -214,7 +214,7 @@ jobs:
           cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../out/Agenda_universal.dmg
           lipo -info src-tauri/target/universal-apple-darwin/release/agenda-app
           ls -l ../out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: macos
           path: out/*
@@ -227,24 +227,26 @@ jobs:
     env:
       NDK_VERSION: 27.2.12479018
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: app/src-tauri
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
-      - name: NDK
+      - name: SDK et NDK (SDK préinstallé sur le runner)
         run: |
-          sdkmanager --install "ndk;$NDK_VERSION" "build-tools;35.0.0" > /dev/null
+          sdkm=$(ls -d "$ANDROID_HOME"/cmdline-tools/*/bin/sdkmanager | sort -V | tail -n1)
+          echo "sdkmanager : $sdkm"
+          yes | "$sdkm" --licenses > /dev/null || true
+          "$sdkm" --install "ndk;$NDK_VERSION" "build-tools;35.0.0" "platforms;android-36" > /dev/null
           echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
       - name: Génération du projet Android
         working-directory: app
@@ -262,7 +264,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
         run: bash app/android-sign.sh out
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: android
           path: out/*
@@ -278,8 +280,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v5
         with:
           path: artifacts
       - name: Version
