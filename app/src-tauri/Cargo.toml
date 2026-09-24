@@ -22,6 +22,10 @@ tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
 
+# Téléchargement des abonnements sur Android (pas de curl) : TLS en Rust pur.
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+ureq = { version = "2", default-features = false, features = ["tls"] }
+
 [profile.release]
 opt-level = "s"
 lto = true

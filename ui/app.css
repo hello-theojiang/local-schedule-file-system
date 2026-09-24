@@ -134,12 +134,17 @@ svg:where(:not([width])) { width: 18px; height: 18px; flex: none; }
   letter-spacing: -.015em;
   line-height: 1;
   margin: 0 6px 0 2px;
+  min-width: 0;
+  flex: 0 1 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .title em { font-style: italic; color: var(--text-3); }
 .spacer { flex: 1; }
+.nav-arrows { display: flex; gap: 2px; flex: none; }
+.topbar > .btn, .topbar > .segmented { flex: none; }
+
 .view { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 
 /* ------------------------------------------------------------ boutons */
@@ -209,6 +214,7 @@ svg:where(:not([width])) { width: 18px; height: 18px; flex: none; }
   color: var(--text-3);
 }
 .search-btn span { flex: 1; text-align: left; white-space: nowrap; }
+.search-btn .kbd { flex: none; }
 
 /* ------------------------------------------------------------ barre latérale */
 .side-section h3 {
@@ -766,6 +772,14 @@ textarea.input { height: auto; min-height: 110px; padding: 10px 11px; resize: ve
 .toast.error { background: var(--danger); color: #fff; }
 .toast.leave { animation: sink 200ms var(--ease) forwards; }
 
+/* ------------------------------------------------------------ fenêtres moyennes */
+@media (max-width: 1360px) and (min-width: 861px) {
+  .search-btn { min-width: 0; }
+  .search-btn span:not(.kbd) { display: none; }
+  .title { font-size: 28px; }
+  .topbar .btn.primary .lbl { display: none; }
+  .topbar .btn.primary { width: 34px; padding: 0; }
+}
 /* ------------------------------------------------------------ mobile */
 .tabbar, .fab, .mob-only { display: none; }
 @media (max-width: 860px) {
