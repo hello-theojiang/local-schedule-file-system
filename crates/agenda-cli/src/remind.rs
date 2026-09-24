@@ -151,8 +151,9 @@ pub fn run(ctx: &Ctx, exec: Option<&str>, ntfy: Option<&str>, once: bool, quiet:
                 fire(&sink, a, quiet);
             }
             last = now;
-            write_state(&sf, last);
         }
+        // toujours mémoriser le passage, même sans rappel : rien ne partira deux fois
+        write_state(&sf, last);
         if once {
             return Ok(());
         }
