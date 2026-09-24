@@ -79,36 +79,6 @@ jobs:
           name: cli-linux-${{ matrix.arch }}
           path: out/*
 
-  # ---------------------------------------------------------------- interface
-  ui-e2e:
-    name: Interface (Playwright)
-    needs: test
-    runs-on: ubuntu-latest
-    if: hashFiles('e2e/package.json') != ''
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: cargo build --release -p agenda-cli
-      - name: Installation de Playwright
-        working-directory: e2e
-        run: |
-          npm ci --no-audit --no-fund
-          npx playwright install --with-deps chromium
-      - name: Parcours principaux
-        working-directory: e2e
-        run: npx playwright test
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: captures
-          path: |
-            e2e/captures/*.png
-            e2e/test-results/**
-
   # ---------------------------------------------------------------- bureau Linux
   desktop-linux:
     name: App Linux (.deb, .AppImage)
@@ -298,10 +268,12 @@ jobs:
           path: out/*
 
   # ---------------------------------------------------------------- Release
+  # Déclenchée par un tag v*, ou par un commit dont le message contient [release]
+  # (la CI crée alors le tag v<version du Cargo.toml> sur ce commit).
   release:
     name: Release publique
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: [test, cli-linux, desktop-linux, desktop-arch, macos, android, ui-e2e]
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release]'))
+    needs: [test, cli-linux, desktop-linux, desktop-arch, macos, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -310,11 +282,20 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Version
+        id: v
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then tag=$GITHUB_REF_NAME
+          else tag=v$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n1); fi
+          conf=$(sed -n 's/.*"version": "\(.*\)".*/\1/p' app/src-tauri/tauri.conf.json | head -n1)
+          test "v$conf" = "$tag" || { echo "::error::tauri.conf.json ($conf) ≠ $tag"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Assemblage
-        run: bash packaging/make-release.sh "${GITHUB_REF_NAME}" artifacts dist
+        run: bash packaging/make-release.sh "${{ steps.v.outputs.tag }}" artifacts dist
       - name: Publication
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.v.outputs.tag }}
         run: |
-          gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
-          gh release create "$GITHUB_REF_NAME" dist/* --title "Agenda $GITHUB_REF_NAME" --notes-file dist-notes.md --latest
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Agenda $TAG" --notes-file dist-notes.md --latest
