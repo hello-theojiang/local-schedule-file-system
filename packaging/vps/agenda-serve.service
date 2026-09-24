@@ -8,6 +8,8 @@ After=network-online.target
 Type=simple
 User=<user>
 Environment=AGENDA_DIR=/home/<user>/agenda
+# Heures « murales » des fichiers : fuseau de l'utilisateur, pas celui du serveur.
+Environment=TZ=Europe/Paris
 Environment=AGENDA_TOKEN=CHANGEZ-MOI-jeton-long-et-aleatoire
 ExecStart=/usr/local/bin/agenda serve --addr 127.0.0.1:8421
 Restart=on-failure
@@ -16,6 +18,9 @@ ProtectSystem=strict
 ProtectHome=read-only
 ReadWritePaths=/home/<user>/agenda
 PrivateTmp=true
+# État local (dernier rappel envoyé, journal d'annulation) : /var/lib/agenda
+StateDirectory=agenda
+Environment=XDG_STATE_HOME=/var/lib
 
 [Install]
 WantedBy=multi-user.target

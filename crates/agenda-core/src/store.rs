@@ -287,6 +287,7 @@ impl Store {
             handles.into_iter().flat_map(|h| h.join().unwrap_or_default()).collect()
         });
         self.items = items.into_iter().map(|i| (i.id.clone(), i)).collect();
+        self.items.shrink_to_fit();
         conflicts.sort();
         self.conflicts = conflicts;
         self.load_calendars();

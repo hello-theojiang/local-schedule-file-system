@@ -15,7 +15,7 @@ cp "$i/128x128.png" "$d/icons/128.png"
 cp "$i/128x128@2x.png" "$d/icons/256.png"
 cp "$i/icon.png" "$d/icons/512.png"
 cp "$root/assets/icon.svg" "$d/icons/agenda.svg"
-cp "$root/docs/AGENDA.md" "$d/" 2>/dev/null || true
+cp "$root/docs/AGENDA.md" "$root/LICENSE-MIT" "$d/"
 tar -C "$tmp" -czf "$out/agenda-extras.tar.gz" agenda-extras
 rm -rf "$tmp"
 echo "$out/agenda-extras.tar.gz"

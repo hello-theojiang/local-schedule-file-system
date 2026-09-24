@@ -8,7 +8,7 @@ exclude = ["app/src-tauri"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "MIT"
 repository = "https://github.com/hello-theojiang/test"
 rust-version = "1.77"
 
@@ -18,3 +18,4 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
+

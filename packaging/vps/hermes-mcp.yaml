@@ -1,0 +1,9 @@
+# Déclaration du serveur MCP « agenda » pour Hermes (à fusionner dans ~/.hermes/config.yaml).
+# Le serveur ne lit et n'écrit que le dossier passé en --dir (plus son journal
+# d'annulation dans ~/.local/state/agenda/). Aucun accès réseau.
+mcp_servers:
+  agenda:
+    command: /usr/local/bin/agenda
+    args: ["--dir", "/home/<user>/agenda", "mcp"]
+    env:
+      TZ: Europe/Paris

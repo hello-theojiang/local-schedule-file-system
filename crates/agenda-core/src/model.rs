@@ -16,12 +16,13 @@ pub struct Event {
     pub calendar: Option<String>,
     pub location: Option<String>,
     pub tags: Vec<String>,
-    pub repeat: Option<RRule>,
+    pub repeat: Option<Box<RRule>>,
     pub except: Vec<When>,
     pub tz: Option<String>,
     /// `None` : rappel par défaut du calendrier ; `Some(vec![])` : aucun rappel.
     pub alarm: Option<Vec<i64>>,
-    pub status: String,
+    /// `confirmed`, `tentative` ou `cancelled` (sans allocation)
+    pub status: &'static str,
     pub uid: Option<String>,
     pub body: String,
     pub readonly: bool,
@@ -93,7 +94,7 @@ impl Event {
             None => None,
         };
         let repeat = match opt(doc, "repeat").or_else(|| opt(doc, "rrule")) {
-            Some(r) => Some(RRule::parse(&r)?),
+            Some(r) => Some(Box::new(RRule::parse(&r)?)),
             None => None,
         };
         Ok(Event {
@@ -109,7 +110,11 @@ impl Event {
             except: doc.get("except").as_list().iter().filter_map(|s| When::parse(s)).collect(),
             tz: opt(doc, "tz"),
             alarm: parse_alarms(&doc.get("alarm")),
-            status: opt(doc, "status").unwrap_or_else(|| "confirmed".into()),
+            status: match opt(doc, "status").map(|s| s.to_lowercase()).as_deref() {
+                Some("cancelled" | "annulé" | "annule") => "cancelled",
+                Some("tentative" | "provisoire") => "tentative",
+                _ => "confirmed",
+            },
             uid: opt(doc, "uid"),
             body: doc.body.clone(),
             readonly: false,

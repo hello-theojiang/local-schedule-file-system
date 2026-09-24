@@ -1,0 +1,59 @@
+# Maintainer: <user>
+# PKGBUILD depuis les sources (compile la CLI et l'application Tauri).
+# Pour installer sans compiler, préférez ../arch-bin/PKGBUILD.
+pkgname=agenda
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Agenda et tâches local-first (Markdown + YAML) : app de bureau Tauri et CLI"
+arch=('x86_64' 'aarch64')
+url="https://github.com/hello-theojiang/test"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3')
+makedepends=('rust' 'cargo' 'nodejs' 'npm')
+optdepends=('libnotify: rappels via notify-send (agenda remind)'
+            'curl: abonnements iCalendar et envoi vers ntfy')
+provides=('agenda')
+conflicts=('agenda-bin')
+options=('!lto' '!debug')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+_src() { cd "$srcdir"/*-"$pkgver"; }
+
+prepare() {
+  _src
+  export CARGO_HOME="$srcdir/cargo-home"
+  cargo fetch --locked
+  (cd app/src-tauri && cargo fetch --locked)
+}
+
+build() {
+  _src
+  export CARGO_HOME="$srcdir/cargo-home"
+  cargo build --release --locked -p agenda-cli
+  cd app
+  npm ci --no-audit --no-fund
+  npx tauri build --no-bundle
+}
+
+check() {
+  _src
+  export CARGO_HOME="$srcdir/cargo-home"
+  cargo test --release --locked --workspace
+}
+
+package() {
+  _src
+  install -Dm755 target/release/agenda "$pkgdir/usr/bin/agenda"
+  install -Dm755 app/src-tauri/target/release/agenda-app "$pkgdir/usr/bin/agenda-app"
+  install -Dm644 packaging/common/agenda.desktop "$pkgdir/usr/share/applications/agenda.desktop"
+  install -Dm644 app/src-tauri/icons/32x32.png "$pkgdir/usr/share/icons/hicolor/32x32/apps/agenda.png"
+  install -Dm644 app/src-tauri/icons/128x128.png "$pkgdir/usr/share/icons/hicolor/128x128/apps/agenda.png"
+  install -Dm644 app/src-tauri/icons/128x128@2x.png "$pkgdir/usr/share/icons/hicolor/256x256/apps/agenda.png"
+  install -Dm644 app/src-tauri/icons/icon.png "$pkgdir/usr/share/icons/hicolor/512x512/apps/agenda.png"
+  install -Dm644 assets/icon.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/agenda.svg"
+  install -Dm644 packaging/common/systemd/agenda-remind.service "$pkgdir/usr/lib/systemd/user/agenda-remind.service"
+  install -Dm644 packaging/common/systemd/agenda-serve.service "$pkgdir/usr/lib/systemd/user/agenda-serve.service"
+  install -Dm644 docs/AGENDA.md "$pkgdir/usr/share/doc/agenda/AGENDA.md"
+  install -Dm644 LICENSE-MIT "$pkgdir/usr/share/licenses/agenda/LICENSE-MIT"
+}

@@ -190,7 +190,11 @@ jobs:
           cp "$GITHUB_WORKSPACE/out/agenda-linux-x86_64" "agenda-cli-$ver"
           cp "$GITHUB_WORKSPACE/out/agenda-extras.tar.gz" "agenda-extras-$ver.tar.gz"
           chown -R builder /tmp/pkg
+          su builder -c 'makepkg --printsrcinfo' > /dev/null
           su builder -c 'makepkg --noconfirm'
+          # le PKGBUILD depuis les sources doit au moins être valide
+          cp "$GITHUB_WORKSPACE/packaging/arch/PKGBUILD" /tmp/PKGBUILD.src && mkdir -p /tmp/src-pkg && mv /tmp/PKGBUILD.src /tmp/src-pkg/PKGBUILD && chown -R builder /tmp/src-pkg
+          (cd /tmp/src-pkg && su builder -c 'makepkg --printsrcinfo')
           pacman -U --noconfirm ./*.pkg.tar.zst
           pacman -Ql agenda-bin
           agenda --version

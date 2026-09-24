@@ -7,7 +7,7 @@ pkgrel=1
 pkgdesc="Agenda et tâches local-first (Markdown + YAML) : app de bureau Tauri et CLI"
 arch=('x86_64')
 url="https://github.com/hello-theojiang/test"
-license=('MIT OR Apache-2.0')
+license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
 optdepends=('libnotify: rappels via notify-send (agenda remind)'
             'curl: abonnements iCalendar et envoi vers ntfy')
@@ -33,5 +33,6 @@ package() {
   install -Dm644 systemd/agenda-remind.service "$pkgdir/usr/lib/systemd/user/agenda-remind.service"
   install -Dm644 systemd/agenda-serve.service "$pkgdir/usr/lib/systemd/user/agenda-serve.service"
   [ -f AGENDA.md ] && install -Dm644 AGENDA.md "$pkgdir/usr/share/doc/agenda/AGENDA.md"
+  [ -f LICENSE-MIT ] && install -Dm644 LICENSE-MIT "$pkgdir/usr/share/licenses/agenda-bin/LICENSE-MIT"
   true
 }

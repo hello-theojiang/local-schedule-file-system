@@ -285,7 +285,7 @@ fn occ_json(st: &Store, o: &Occ) -> Json {
         .set("tags", e.tags.clone())
         .set("recurring", e.repeat.is_some())
         .set("readonly", e.readonly || cal.map(|c| c.url.is_some()).unwrap_or(false))
-        .set("status", e.status.as_str());
+        .set("status", e.status);
     if let Some(k) = &o.key {
         j.insert("occurrence", k.as_str());
     }
@@ -379,7 +379,7 @@ fn event_json(st: &Store, e: &Event) -> Json {
                 Some(a) => Json::from(a.iter().map(|x| format_duration(*x)).collect::<Vec<_>>()),
             },
         )
-        .set("status", e.status.as_str())
+        .set("status", e.status)
         .set("body", e.body.as_str())
 }
 
