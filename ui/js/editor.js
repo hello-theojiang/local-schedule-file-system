@@ -271,10 +271,10 @@ function render(app, it, occ, isNew = false) {
         }
         if (timeChanged) {
           const endForMove = f.end || (f.start.length === 10 ? f.start : null);
-          const r = await app.call('move', { id, occurrence: occ.occurrence, start: f.start, end: endForMove, scope });
+          const r = await app.mutate('move', { id, occurrence: occ.occurrence, start: f.start, end: endForMove, scope });
           if (r.id) id = r.id;
         }
-        if (Object.keys(rest).length) await app.call('update', { id, fields: rest });
+        if (Object.keys(rest).length) await app.mutate('update', { id, fields: rest });
         await app.act('info', {}, scope === 'one' ? `Occurrence modifiée : ${f.title}` : `Série modifiée : ${f.title}`);
         return;
       }

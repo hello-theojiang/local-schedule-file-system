@@ -96,9 +96,25 @@ app.error = (e) => app.toast(e instanceof ApiError || e instanceof Error ? e.mes
 
 // ------------------------------------------------------------ actions
 /** Appel qui modifie l'agenda : rafraîchit et propose l'annulation. */
+/** Marque une écriture locale : ses échos dans la boucle de surveillance ne sont pas « externes ». */
+const local = { busy: 0, until: 0 };
+const mark = (d) => {
+  local.busy += d;
+  local.until = Date.now() + 2500;
+};
+async function mutate(method, params) {
+  mark(1);
+  try {
+    return await call(method, params);
+  } finally {
+    mark(-1);
+  }
+}
+app.mutate = mutate;
+
 app.act = async (method, params, label) => {
   try {
-    const r = await call(method, params);
+    const r = await mutate(method, params);
     if (r && r.version) S.version = r.version;
     await app.refresh();
     if (r && r.conflicts && r.conflicts.length) {
@@ -116,7 +132,7 @@ app.act = async (method, params, label) => {
 };
 app.undo = async () => {
   try {
-    const r = await call('undo');
+    const r = await mutate('undo');
     S.version = r.version;
     await app.refresh();
     app.toast(`Annulé : ${r.undone}`, { action: { label: 'Rétablir', run: app.redo } });
@@ -127,7 +143,7 @@ app.undo = async () => {
 };
 app.redo = async () => {
   try {
-    const r = await call('redo');
+    const r = await mutate('redo');
     S.version = r.version;
     await app.refresh();
     app.toast(`Rétabli : ${r.redone}`);
@@ -302,7 +318,7 @@ async function watchLoop() {
       const r = await call('changes', { since: S.version, wait: 25000 });
       showConflicts(r.conflicts);
       if (r.version !== S.version) {
-        const external = S.version !== 0;
+        const external = S.version !== 0 && local.busy === 0 && Date.now() > local.until;
         S.version = r.version;
         await app.refresh();
         scheduleReminders(app);

@@ -60,7 +60,10 @@ test.describe('bureau', () => {
     await expect(page.locator('.opt.create')).toContainText('@Salle B');
     await shot(page, 'palette');
     await page.keyboard.press('Enter');
-    await expect(page.locator('.toast')).toContainText('Créé');
+    await expect(page.locator('.toast', { hasText: 'Créé' })).toBeVisible();
+    // notre propre écriture ne doit pas être annoncée comme une modification externe
+    await page.waitForTimeout(1500);
+    await expect(page.locator('.toast', { hasText: 'modification externe' })).toHaveCount(0);
     await expect(page.locator('.ev', { hasText: 'Réunion test' })).toBeVisible();
     const found = await api(request, 'search', { q: 'reunion test' });
     expect(found[0].title).toBe('Réunion test');

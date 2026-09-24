@@ -202,7 +202,7 @@ export async function exportIcs(app) {
 export async function updateSubscriptions(app) {
   app.toast('Actualisation des abonnements…');
   try {
-    const r = await app.call('sub_update');
+    const r = await app.mutate('sub_update');
     const ok = r.filter((x) => !x.error);
     const ko = r.filter((x) => x.error);
     await app.refresh();
