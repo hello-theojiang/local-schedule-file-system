@@ -1,6 +1,10 @@
 //! JSON minimal : analyse, sérialisation, accès pratique. Objets ordonnés.
 
+use std::borrow::Cow;
 use std::fmt::Write as _;
+
+/// Clé d'objet : les clés littérales ne sont pas allouées.
+pub type Key = Cow<'static, str>;
 
 #[derive(Clone, Debug, PartialEq, Default)]
 pub enum Json {
@@ -10,27 +14,32 @@ pub enum Json {
     Num(f64),
     Str(String),
     Arr(Vec<Json>),
-    Obj(Vec<(String, Json)>),
+    Obj(Vec<(Key, Json)>),
 }
 
 impl Json {
     pub fn obj() -> Json {
-        Json::Obj(Vec::new())
+        Json::Obj(Vec::with_capacity(8))
     }
 
-    /// Ajoute (ou remplace) une clé. Chaînable.
-    pub fn set(mut self, k: &str, v: impl Into<Json>) -> Json {
-        self.insert(k, v);
+    /// Constructeur chaînable : ajoute une clé **nouvelle** (pas de recherche de doublon,
+    /// pour la vitesse). Pour remplacer une clé existante, utiliser [`Json::insert`].
+    pub fn set(mut self, k: impl Into<Key>, v: impl Into<Json>) -> Json {
+        if let Json::Obj(m) = &mut self {
+            let k = k.into();
+            debug_assert!(!m.iter().any(|(kk, _)| *kk == k), "clé en double : {k}");
+            m.push((k, v.into()));
+        }
         self
     }
 
     pub fn insert(&mut self, k: &str, v: impl Into<Json>) {
         if let Json::Obj(m) = self {
             let v = v.into();
-            if let Some(e) = m.iter_mut().find(|(kk, _)| kk == k) {
+            if let Some(e) = m.iter_mut().find(|(kk, _)| kk.as_ref() == k) {
                 e.1 = v;
             } else {
-                m.push((k.to_string(), v));
+                m.push((Cow::Owned(k.to_string()), v));
             }
         }
     }
@@ -44,13 +53,13 @@ impl Json {
     pub fn get(&self, k: &str) -> &Json {
         static NULL: Json = Json::Null;
         match self {
-            Json::Obj(m) => m.iter().find(|(kk, _)| kk == k).map(|(_, v)| v).unwrap_or(&NULL),
+            Json::Obj(m) => m.iter().find(|(kk, _)| kk.as_ref() == k).map(|(_, v)| v).unwrap_or(&NULL),
             _ => &NULL,
         }
     }
 
     pub fn has(&self, k: &str) -> bool {
-        matches!(self, Json::Obj(m) if m.iter().any(|(kk, _)| kk == k))
+        matches!(self, Json::Obj(m) if m.iter().any(|(kk, _)| kk.as_ref() == k))
     }
 
     pub fn as_str(&self) -> Option<&str> {
@@ -90,7 +99,7 @@ impl Json {
         }
     }
 
-    pub fn as_obj(&self) -> &[(String, Json)] {
+    pub fn as_obj(&self) -> &[(Key, Json)] {
         match self {
             Json::Obj(m) => m,
             _ => &[],
@@ -205,21 +214,42 @@ fn nl(out: &mut String, indent: Option<usize>) {
 }
 
 pub fn write_str(out: &mut String, s: &str) {
+    out.reserve(s.len() + 2);
     out.push('"');
-    for c in s.chars() {
-        match c {
-            '"' => out.push_str("\\\""),
-            '\\' => out.push_str("\\\\"),
-            '\n' => out.push_str("\\n"),
-            '\r' => out.push_str("\\r"),
-            '\t' => out.push_str("\\t"),
-            // U+2028/2029 cassent certains analyseurs JavaScript
-            c if (c as u32) < 0x20 || c == '\u{2028}' || c == '\u{2029}' => {
-                let _ = write!(out, "\\u{:04x}", c as u32);
+    let b = s.as_bytes();
+    let mut start = 0;
+    let mut i = 0;
+    while i < b.len() {
+        let c = b[i];
+        let esc: Option<&str> = match c {
+            b'"' => Some("\\\""),
+            b'\\' => Some("\\\\"),
+            b'\n' => Some("\\n"),
+            b'\r' => Some("\\r"),
+            b'\t' => Some("\\t"),
+            0..=0x1f => Some(""),
+            // U+2028 / U+2029 (E2 80 A8/A9) cassent certains analyseurs JavaScript
+            0xE2 if i + 2 < b.len() && b[i + 1] == 0x80 && (b[i + 2] == 0xA8 || b[i + 2] == 0xA9) => Some(""),
+            _ => None,
+        };
+        match esc {
+            None => i += 1,
+            Some(e) => {
+                out.push_str(&s[start..i]);
+                if e.is_empty() {
+                    let (cp, len) =
+                        if c == 0xE2 { (if b[i + 2] == 0xA8 { 0x2028 } else { 0x2029 }, 3) } else { (c as u32, 1) };
+                    let _ = write!(out, "\\u{cp:04x}");
+                    i += len;
+                } else {
+                    out.push_str(e);
+                    i += 1;
+                }
+                start = i;
             }
-            c => out.push(c),
         }
     }
+    out.push_str(&s[start..]);
     out.push('"');
 }
 
@@ -322,10 +352,10 @@ impl Parser<'_> {
                     }
                     self.i += 1;
                     let v = self.value(depth + 1)?;
-                    if let Some(e) = m.iter_mut().find(|(kk, _): &&mut (String, Json)| *kk == k) {
+                    if let Some(e) = m.iter_mut().find(|(kk, _): &&mut (Key, Json)| *kk == k) {
                         e.1 = v;
                     } else {
-                        m.push((k, v));
+                        m.push((Cow::Owned(k), v));
                     }
                     self.ws();
                     match self.b.get(self.i) {
@@ -455,6 +485,14 @@ mod tests {
     }
 
     #[test]
+    fn echappements() {
+        let s = "a\u{1}b\u{2028}c\"d\\é";
+        let out = Json::from(s).to_string();
+        assert_eq!(out, "\"a\\u0001b\\u2028c\\\"d\\\\é\"");
+        assert_eq!(Json::parse(&out).unwrap().as_str(), Some(s));
+    }
+
+    #[test]
     fn erreurs() {
         assert!(Json::parse("{").is_err());
         assert!(Json::parse("[1,]").is_err());
@@ -465,7 +503,8 @@ mod tests {
 
     #[test]
     fn construction() {
-        let v = Json::obj().set("x", 3i64).set("y", "z").set("x", 4i64);
+        let mut v = Json::obj().set("x", 3i64).set("y", "z");
+        v.insert("x", 4i64);
         assert_eq!(v.to_string(), r#"{"x":4,"y":"z"}"#);
     }
 }

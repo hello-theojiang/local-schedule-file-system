@@ -118,9 +118,32 @@ pub fn add_months_ym(y: i32, m: u32, n: i64) -> (i32, u32) {
     (t.div_euclid(12) as i32, (t.rem_euclid(12) + 1) as u32)
 }
 
+fn push2(s: &mut String, n: u32) {
+    s.push((b'0' + (n / 10 % 10) as u8) as char);
+    s.push((b'0' + (n % 10) as u8) as char);
+}
+
+impl Date {
+    /// Formatage rapide `AAAA-MM-JJ` (chemin critique de l'affichage).
+    pub fn push_to(self, s: &mut String) {
+        if (0..=9999).contains(&self.y) {
+            push2(s, self.y as u32 / 100);
+            push2(s, self.y as u32 % 100);
+        } else {
+            s.push_str(&format!("{:04}", self.y));
+        }
+        s.push('-');
+        push2(s, self.m);
+        s.push('-');
+        push2(s, self.d);
+    }
+}
+
 impl fmt::Display for Date {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:04}-{:02}-{:02}", self.y, self.m, self.d)
+        let mut s = String::with_capacity(10);
+        self.push_to(&mut s);
+        f.write_str(&s)
     }
 }
 
@@ -205,13 +228,26 @@ pub fn parse_time(t: &str) -> Option<u32> {
     Some(h * 3600 + m * 60 + s.min(59))
 }
 
+impl DateTime {
+    /// Formatage rapide `AAAA-MM-JJ HH:MM[:SS]`.
+    pub fn fast_string(self) -> String {
+        let mut s = String::with_capacity(19);
+        self.date.push_to(&mut s);
+        s.push(' ');
+        push2(&mut s, self.hour());
+        s.push(':');
+        push2(&mut s, self.minute());
+        if self.sec % 60 != 0 {
+            s.push(':');
+            push2(&mut s, self.sec % 60);
+        }
+        s
+    }
+}
+
 impl fmt::Display for DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} {:02}:{:02}", self.date, self.hour(), self.minute())?;
-        if self.sec % 60 != 0 {
-            write!(f, ":{:02}", self.sec % 60)?;
-        }
-        Ok(())
+        f.write_str(&self.fast_string())
     }
 }
 
