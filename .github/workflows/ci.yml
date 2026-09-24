@@ -335,3 +335,16 @@ jobs:
         run: |
           gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "Agenda $TAG" --notes-file dist-notes.md --latest
+      - name: Liens de téléchargement sans compte GitHub
+        run: |
+          # l'utilisateur n'a pas de compte : chaque lien doit marcher sans authentification
+          bad=0
+          for f in dist/*; do
+            url="https://github.com/$GITHUB_REPOSITORY/releases/latest/download/$(basename "$f")"
+            code=$(curl -s -o /dev/null -L -w '%{http_code}' "$url")
+            echo "$code $url"
+            [ "$code" = 200 ] || bad=1
+          done
+          if [ "$bad" = 1 ]; then
+            echo "::warning title=Release inaccessible sans compte::Les liens répondent autrement que 200 : le dépôt est probablement privé. Rendez-le public (Settings → General → Danger Zone → Change visibility)."
+          fi

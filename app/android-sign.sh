@@ -30,7 +30,11 @@ set -x
   --ks-key-alias "$KEY_ALIAS" --out "$out/agenda.apk" "$work/aligned.apk"
 set +x
 echo "--- vérification"
-"$bt/apksigner" verify --verbose --print-certs "$out/agenda.apk" || { echo "::error::signature invalide"; exit 1; }
+"$bt/apksigner" verify --verbose --print-certs "$out/agenda.apk" > "$work/verify.txt" || { cat "$work/verify.txt"; echo "::error::signature invalide"; exit 1; }
+cat "$work/verify.txt"
+# empreinte du certificat, reprise dans les notes de la Release
+grep -m1 'certificate SHA-256 digest' "$work/verify.txt" | sed 's/.*digest: //' >> "$out/android-signing.txt"
+rm -f "$out/agenda.apk.idsig"
 echo "--- bibliothèques natives"
 unzip -l "$out/agenda.apk" | awk '/lib\/.*\.so/ {print $1, $4}' || true
 ls -l "$out"

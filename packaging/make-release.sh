@@ -9,7 +9,8 @@ mkdir -p "$dist"
 find "$art" -type f \( -name 'agenda-linux-*' -o -name 'agenda-macos-*' -o -name 'agenda-app-linux-x86_64' \
   -o -name 'agenda-extras.tar.gz' -o -name 'Agenda_*' -o -name 'agenda.apk' -o -name 'capture-*.png' \) \
   -exec cp {} "$dist/" \;
-signing=$(cat "$art"/android/android-signing.txt 2>/dev/null || echo inconnue)
+signing=$(head -n1 "$art"/android/android-signing.txt 2>/dev/null || echo inconnue)
+cert=$(sed -n 2p "$art"/android/android-signing.txt 2>/dev/null)
 
 s() { sha256sum "$dist/$1" | cut -d' ' -f1; }
 sed -e "s/^pkgver=.*/pkgver=$ver/" \
@@ -34,6 +35,7 @@ repo=${GITHUB_REPOSITORY:-hello-theojiang/test}
   echo "| Android (arm64, armv7) | \`agenda.apk\` |"
   echo "| CLI / VPS | \`agenda-linux-x86_64\`, \`agenda-linux-aarch64\`, \`agenda-macos-arm64\`, \`agenda-macos-x86_64\` |"
   echo
+  [ -n "$cert" ] && echo "Certificat de l'APK (SHA-256) : \`$cert\`" && echo
   if [ "$signing" != stable ]; then
     echo "> ⚠️ **APK signé avec une clé temporaire** : les secrets de signature ne sont pas encore configurés."
     echo "> Une future version signée avec la clé définitive demandera de désinstaller cette app une fois."
