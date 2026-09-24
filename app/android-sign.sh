@@ -24,9 +24,14 @@ else
   echo temporaire > "$out/android-signing.txt"
 fi
 export KEYSTORE_PASSWORD
+echo "build-tools : $bt"
+set -x
 "$bt/apksigner" sign --ks "$work/release.jks" --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEYSTORE_PASSWORD \
   --ks-key-alias "$KEY_ALIAS" --out "$out/agenda.apk" "$work/aligned.apk"
-"$bt/apksigner" verify --print-certs "$out/agenda.apk" | grep -E 'Signer #1 certificate (DN|SHA-256)'
-unzip -l "$out/agenda.apk" | grep -E 'lib/.*\.so' || true
+set +x
+echo "--- vérification"
+"$bt/apksigner" verify --verbose --print-certs "$out/agenda.apk" || { echo "::error::signature invalide"; exit 1; }
+echo "--- bibliothèques natives"
+unzip -l "$out/agenda.apk" | awk '/lib\/.*\.so/ {print $1, $4}' || true
 ls -l "$out"
 rm -rf "$work"

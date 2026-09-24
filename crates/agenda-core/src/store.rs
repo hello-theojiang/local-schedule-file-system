@@ -97,6 +97,8 @@ pub struct Store {
     history: HashMap<String, Vec<String>>,
     undo: Vec<Op>,
     redo: Vec<Op>,
+    /// Journal d'annulation persistant (propre à la machine, hors du dossier synchronisé).
+    pub journal: Option<PathBuf>,
 }
 
 fn is_conflict_name(name: &str) -> bool {
@@ -260,6 +262,7 @@ impl Store {
             history: HashMap::new(),
             undo: vec![],
             redo: vec![],
+            journal: None,
         };
         s.load_all();
         Ok(s)
@@ -638,12 +641,86 @@ impl Store {
 
     pub fn commit(&mut self, op: Op) {
         if !op.changes.is_empty() {
+            self.load_journal();
             self.undo.push(op);
-            if self.undo.len() > 200 {
+            if self.undo.len() > 100 {
                 self.undo.remove(0);
             }
             self.redo.clear();
+            self.save_journal();
         }
+    }
+
+    pub fn load_journal(&mut self) {
+        let Some(p) = &self.journal else { return };
+        let Ok(text) = fs::read_to_string(p) else { return };
+        let Ok(j) = Json::parse(&text) else { return };
+        if j.get("root").as_str() != Some(&*self.root.to_string_lossy()) {
+            return;
+        }
+        let ops = |k: &str| -> Vec<Op> {
+            j.get(k)
+                .as_arr()
+                .iter()
+                .map(|o| Op {
+                    label: o.get("label").str_or("").to_string(),
+                    changes: o
+                        .get("changes")
+                        .as_arr()
+                        .iter()
+                        .map(|c| Change {
+                            path: c.get("path").str_or("").to_string(),
+                            before: c.get("before").as_str().map(str::to_string),
+                            after: c.get("after").as_str().map(str::to_string),
+                        })
+                        .collect(),
+                })
+                .filter(|o: &Op| o.changes.iter().all(|c| check_id(&c.path).is_ok() || is_conflict_name(&c.path)))
+                .collect()
+        };
+        self.undo = ops("undo");
+        self.redo = ops("redo");
+    }
+
+    fn save_journal(&self) {
+        let Some(p) = &self.journal else { return };
+        let ser = |v: &[Op]| -> Json {
+            // on ne journalise pas les très grosses opérations (import massif)
+            let keep = v.iter().filter(|o| {
+                o.changes
+                    .iter()
+                    .map(|c| c.before.as_ref().map_or(0, |b| b.len()) + c.after.as_ref().map_or(0, |a| a.len()))
+                    .sum::<usize>()
+                    < 4 << 20
+            });
+            Json::Arr(
+                keep.map(|o| {
+                    Json::obj().set("label", o.label.as_str()).set(
+                        "changes",
+                        Json::Arr(
+                            o.changes
+                                .iter()
+                                .map(|c| {
+                                    Json::obj()
+                                        .set("path", c.path.as_str())
+                                        .set("before", c.before.clone())
+                                        .set("after", c.after.clone())
+                                })
+                                .collect(),
+                        ),
+                    )
+                })
+                .collect(),
+            )
+        };
+        let j = Json::obj()
+            .set("root", self.root.to_string_lossy().to_string())
+            .set("undo", ser(&self.undo))
+            .set("redo", ser(&self.redo));
+        if let Some(d) = p.parent() {
+            let _ = fs::create_dir_all(d);
+        }
+        let _ = atomic_write(p, j.to_string().as_bytes());
     }
 
     fn replay(&mut self, op: Op) -> Result<Op, (Op, String)> {
@@ -669,8 +746,9 @@ impl Store {
     }
 
     pub fn undo(&mut self) -> Result<String, String> {
+        self.load_journal();
         let op = self.undo.pop().ok_or("rien à annuler")?;
-        match self.replay(op) {
+        let r = match self.replay(op) {
             Ok(inv) => {
                 let l = inv.label.clone();
                 self.redo.push(inv);
@@ -680,12 +758,15 @@ impl Store {
                 self.undo.push(op);
                 Err(m)
             }
-        }
+        };
+        self.save_journal();
+        r
     }
 
     pub fn redo(&mut self) -> Result<String, String> {
+        self.load_journal();
         let op = self.redo.pop().ok_or("rien à rétablir")?;
-        match self.replay(op) {
+        let r = match self.replay(op) {
             Ok(inv) => {
                 let l = inv.label.clone();
                 self.undo.push(inv);
@@ -695,7 +776,9 @@ impl Store {
                 self.redo.push(op);
                 Err(m)
             }
-        }
+        };
+        self.save_journal();
+        r
     }
 
     pub fn undo_label(&self) -> Option<&str> {

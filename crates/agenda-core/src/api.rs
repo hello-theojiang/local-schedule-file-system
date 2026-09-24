@@ -18,7 +18,7 @@ use std::time::{Duration, Instant};
 /// Liste des méthodes, avec une description courte (servie par `help`).
 pub const METHODS: &[(&str, &str)] = &[
     ("version", "version du cœur"),
-    ("open", "{path, create?} ouvre (ou crée) un dossier agenda"),
+    ("open", "{path, create?, watch?, journal?} ouvre (ou crée) un dossier agenda ; journal : fichier d'annulation persistant"),
     ("info", "état : dossier, nombre d'éléments, conflits, fichiers invalides, annulation"),
     ("set_timezone", "{tz} fuseau IANA de l'appareil (ex. Europe/Paris)"),
     ("list", "{from?, to?, calendars?, include_hidden?, tasks?} occurrences d'événements (et tâches à échéance) sur une période"),
@@ -188,7 +188,8 @@ impl Api {
         let create = p.get("create").as_bool().unwrap_or(false);
         let tz = self.lock().tz_override.clone().unwrap_or_else(Tz::local);
         let started = Instant::now();
-        let store = Store::open(&path, create, tz)?;
+        let mut store = Store::open(&path, create, tz)?;
+        store.journal = p.get("journal").as_str().map(PathBuf::from);
         let ms = started.elapsed().as_secs_f64() * 1000.0;
         let watcher = if p.get("watch").as_bool().unwrap_or(true) {
             Some(Arc::new(Watcher::start(&path, self.poll)))
@@ -390,7 +391,10 @@ fn done(st: &mut Store, op: Op) -> Json {
 
 fn dispatch(st: &mut Store, method: &str, p: &Json) -> R {
     match method {
-        "info" => Ok(info(st)),
+        "info" => {
+            st.load_journal();
+            Ok(info(st))
+        }
         "list" => {
             let (from, to) = range(st, p, 7)?;
             let filter = p.get("calendars").str_list();
