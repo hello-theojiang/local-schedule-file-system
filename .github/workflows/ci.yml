@@ -1,0 +1,320 @@
+name: CI
+
+# Chaque push compile et teste toutes les couches ; un tag v* publie une Release.
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  # ---------------------------------------------------------------- cœur + CLI
+  test:
+    name: Tests, clippy, bench
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - name: Le cœur n'a aucune dépendance
+        run: |
+          cargo tree -p agenda-core --edges normal,build --prefix none | tee /tmp/tree
+          test "$(grep -vc '^agenda-core' /tmp/tree)" = 0
+          cargo tree -p agenda-cli --edges normal,build --prefix none | grep -v '^agenda-' && exit 1 || true
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Bench (6 000 fichiers)
+        run: cargo run --release -p agenda-core --example bench
+        if: hashFiles('crates/agenda-core/examples/bench.rs') != ''
+
+  cli-linux:
+    name: CLI Linux (${{ matrix.arch }}, musl statique)
+    needs: test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-unknown-linux-musl
+          - arch: aarch64
+            target: aarch64-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Compilation
+        env:
+          # Lien statique autonome : pas besoin de chaîne de compilation croisée.
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: rust-lld
+        run: cargo build --release -p agenda-cli --target ${{ matrix.target }}
+      - name: Vérification
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq qemu-user-static file
+          bin=target/${{ matrix.target }}/release/agenda
+          file "$bin"
+          ls -l "$bin"
+          if [ "${{ matrix.arch }}" = aarch64 ]; then qemu-aarch64-static "$bin" --version; else "$bin" --version; fi
+          mkdir -p out && cp "$bin" out/agenda-linux-${{ matrix.arch }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-linux-${{ matrix.arch }}
+          path: out/*
+
+  # ---------------------------------------------------------------- interface
+  ui-e2e:
+    name: Interface (Playwright)
+    needs: test
+    runs-on: ubuntu-latest
+    if: hashFiles('e2e/package.json') != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: cargo build --release -p agenda-cli
+      - name: Installation de Playwright
+        working-directory: e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Parcours principaux
+        working-directory: e2e
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: captures
+          path: |
+            e2e/captures/*.png
+            e2e/test-results/**
+
+  # ---------------------------------------------------------------- bureau Linux
+  desktop-linux:
+    name: App Linux (.deb, .AppImage)
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Dépendances système
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev patchelf file
+      - name: Build Tauri
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npx tauri build --ci --bundles deb,appimage
+      - name: Renommage
+        run: |
+          b=app/src-tauri/target/release
+          mkdir -p out
+          cp $b/bundle/deb/*.deb out/Agenda_amd64.deb
+          cp $b/bundle/appimage/*.AppImage out/Agenda_amd64.AppImage
+          cp $b/agenda-app out/agenda-app-linux-x86_64-ubuntu
+          ls -l out
+          dpkg-deb -I out/Agenda_amd64.deb
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux
+          path: out/*
+
+  # Compilation dans Arch Linux : c'est ce binaire que reçoit le PKGBUILD -bin.
+  desktop-arch:
+    name: App Arch Linux + test du PKGBUILD
+    needs: [test, cli-linux]
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Paquets Arch
+        run: |
+          pacman -Syu --noconfirm --needed base-devel git rustup nodejs npm webkit2gtk-4.1 gtk3 librsvg xorg-server-xvfb file
+          rustup default stable
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            app/src-tauri/target
+          key: arch-${{ hashFiles('app/src-tauri/Cargo.lock') }}
+      - name: Build Tauri (sans bundle)
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npx tauri build --ci --no-bundle
+          mkdir -p ../out
+          cp src-tauri/target/release/agenda-app ../out/agenda-app-linux-x86_64
+          ls -l ../out
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-linux-x86_64
+          path: out
+      - name: Paquet des fichiers annexes
+        run: bash packaging/make-extras.sh out
+      - name: Test du PKGBUILD -bin (sources locales)
+        run: |
+          useradd -m builder
+          mkdir -p /tmp/pkg && cp packaging/arch-bin/PKGBUILD /tmp/pkg/
+          cd /tmp/pkg
+          ver=$(sed -n 's/^pkgver=//p' PKGBUILD)
+          # makepkg réutilise un fichier source déjà présent au bon nom : on lui
+          # donne les binaires qui viennent d'être compilés au lieu de la Release.
+          cp "$GITHUB_WORKSPACE/out/agenda-app-linux-x86_64" "agenda-app-$ver"
+          cp "$GITHUB_WORKSPACE/out/agenda-linux-x86_64" "agenda-cli-$ver"
+          cp "$GITHUB_WORKSPACE/out/agenda-extras.tar.gz" "agenda-extras-$ver.tar.gz"
+          chown -R builder /tmp/pkg
+          su builder -c 'makepkg --noconfirm'
+          pacman -U --noconfirm ./*.pkg.tar.zst
+          pacman -Ql agenda-bin
+          agenda --version
+          test -f /usr/share/applications/agenda.desktop
+          test -f /usr/lib/systemd/user/agenda-remind.service
+          ldd /usr/bin/agenda-app | tee /tmp/ldd
+          ! grep -q 'not found' /tmp/ldd
+          # la fenêtre démarre-t-elle ? (5 s sous Xvfb)
+          export WEBKIT_DISABLE_DMABUF_RENDERER=1
+          set +e; timeout 5 xvfb-run -a agenda-app; code=$?; set -e
+          echo "code de sortie : $code (124 = toujours vivant après 5 s, attendu)"
+          test "$code" = 124
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-arch
+          path: |
+            out/agenda-app-linux-x86_64
+            out/agenda-extras.tar.gz
+
+  # ---------------------------------------------------------------- macOS
+  macos:
+    name: macOS (CLI + .dmg universel)
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            . -> target
+            app/src-tauri -> target
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: CLI
+        run: |
+          mkdir -p out
+          for t in aarch64-apple-darwin x86_64-apple-darwin; do cargo build --release -p agenda-cli --target $t; done
+          cp target/aarch64-apple-darwin/release/agenda out/agenda-macos-arm64
+          cp target/x86_64-apple-darwin/release/agenda out/agenda-macos-x86_64
+          out/agenda-macos-arm64 --version
+          file out/*
+      - name: App universelle
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npx tauri build --ci --target universal-apple-darwin --bundles app,dmg
+          cp src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg ../out/Agenda_universal.dmg
+          lipo -info src-tauri/target/universal-apple-darwin/release/agenda-app
+          ls -l ../out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: out/*
+
+  # ---------------------------------------------------------------- Android
+  android:
+    name: APK Android
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      NDK_VERSION: 27.2.12479018
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: NDK
+        run: |
+          sdkmanager --install "ndk;$NDK_VERSION" "build-tools;35.0.0" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - name: Génération du projet Android
+        working-directory: app
+        run: |
+          npm ci --no-audit --no-fund
+          npx tauri android init --ci
+          bash android-patch.sh
+          cd src-tauri && npx tauri icon ../../assets/icon.png > /dev/null
+      - name: Build APK (arm64 + armv7)
+        working-directory: app
+        run: npx tauri android build --ci --apk --target aarch64 --target armv7
+      - name: Signature
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: bash app/android-sign.sh out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: out/*
+
+  # ---------------------------------------------------------------- Release
+  release:
+    name: Release publique
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [test, cli-linux, desktop-linux, desktop-arch, macos, android, ui-e2e]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Assemblage
+        run: bash packaging/make-release.sh "${GITHUB_REF_NAME}" artifacts dist
+      - name: Publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete "$GITHUB_REF_NAME" --yes 2>/dev/null || true
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Agenda $GITHUB_REF_NAME" --notes-file dist-notes.md --latest

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- LaunchAgent : rappels de l'agenda (notifications macOS via osascript).
+     Installation : cp dev.localfirst.agenda.remind.plist ~/Library/LaunchAgents/
+                    launchctl load -w ~/Library/LaunchAgents/dev.localfirst.agenda.remind.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>dev.localfirst.agenda.remind</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/agenda</string>
+    <string>remind</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProcessType</key><string>Background</string>
+  <key>StandardErrorPath</key><string>/tmp/agenda-remind.log</string>
+</dict>
+</plist>

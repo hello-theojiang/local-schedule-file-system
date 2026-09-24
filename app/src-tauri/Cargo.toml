@@ -1,0 +1,30 @@
+[package]
+name = "agenda-app"
+version = "0.1.0"
+description = "Agenda — enveloppe Tauri 2 (bureau + Android) autour de agenda-core"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+rust-version = "1.77"
+
+# Workspace indépendant : les dépendances de Tauri restent confinées ici.
+[workspace]
+
+[lib]
+name = "agenda_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+agenda-core = { path = "../../crates/agenda-core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-notification = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

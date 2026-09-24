@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Agenda
+GenericName=Agenda et tâches
+Comment=Agenda et tâches local-first en Markdown
+Exec=agenda-app
+Icon=agenda
+Terminal=false
+Categories=Office;Calendar;ProjectManagement;
+Keywords=calendrier;tâches;agenda;calendar;tasks;todo;
+StartupWMClass=agenda-app
+StartupNotify=true

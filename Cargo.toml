@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = ["crates/agenda-core", "crates/agenda-cli"]
+# L'enveloppe Tauri (app/src-tauri) a son propre workspace et son propre
+# Cargo.lock : ses dépendances ne doivent jamais toucher le cœur ni la CLI.
+exclude = ["app/src-tauri"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/hello-theojiang/test"
+rust-version = "1.77"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

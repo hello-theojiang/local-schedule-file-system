@@ -1,0 +1,11 @@
+{
+  "name": "agenda-app",
+  "private": true,
+  "description": "Outillage de build uniquement (CLI Tauri). L'interface n'a aucune étape de build.",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

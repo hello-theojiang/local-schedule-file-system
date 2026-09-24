@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Agenda</title></head>
+<body><h1>Agenda</h1><p id="v">…</p>
+<script>
+const t = window.__TAURI__;
+if (t) t.core.invoke('api', {method: 'version', params: '{}'}).then(r => document.getElementById('v').textContent = r);
+</script></body></html>

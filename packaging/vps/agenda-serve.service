@@ -1,0 +1,21 @@
+# VPS (optionnel) : interface web + flux /agenda.ics, sur 127.0.0.1 uniquement.
+# Exposez-le derrière un reverse proxy TLS, avec un jeton : AGENDA_TOKEN.
+[Unit]
+Description=Agenda — interface web et flux iCalendar
+After=network-online.target
+
+[Service]
+Type=simple
+User=<user>
+Environment=AGENDA_DIR=/home/<user>/agenda
+Environment=AGENDA_TOKEN=CHANGEZ-MOI-jeton-long-et-aleatoire
+ExecStart=/usr/local/bin/agenda serve --addr 127.0.0.1:8421
+Restart=on-failure
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/<user>/agenda
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
