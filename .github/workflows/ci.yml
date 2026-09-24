@@ -79,6 +79,36 @@ jobs:
           name: cli-linux-${{ matrix.arch }}
           path: out/*
 
+  # ---------------------------------------------------------------- interface
+  ui-e2e:
+    name: Interface (Playwright)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: cargo build --release -p agenda-cli
+      - name: Installation de Playwright
+        working-directory: e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Parcours principaux
+        working-directory: e2e
+        run: npx playwright test
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: captures
+          path: |
+            e2e/captures/*.png
+            e2e/test-results/**
+          if-no-files-found: ignore
+
   # ---------------------------------------------------------------- bureau Linux
   desktop-linux:
     name: App Linux (.deb, .AppImage)
@@ -275,7 +305,7 @@ jobs:
   release:
     name: Release publique
     if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[release]'))
-    needs: [test, cli-linux, desktop-linux, desktop-arch, macos, android]
+    needs: [test, cli-linux, desktop-linux, desktop-arch, macos, android, ui-e2e]
     runs-on: ubuntu-latest
     permissions:
       contents: write

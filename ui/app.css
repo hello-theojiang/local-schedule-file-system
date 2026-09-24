@@ -849,6 +849,8 @@ textarea.input { height: auto; min-height: 110px; padding: 10px 11px; resize: ve
   .fab:active { transform: scale(.93); }
   .fab svg { width: 26px; height: 26px; }
   .overlay { padding: calc(8px + var(--safe-top)) 8px 8px; align-items: flex-start; }
+  .opt .txt small { white-space: normal; }
+  .palette-foot span:nth-child(n+3) { display: none; }
   .sheet { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92dvh; border-radius: 22px 22px 0 0; animation: slide-up 260ms var(--ease); }
   .sheet::before { content: ""; display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--line-2); margin: 8px auto 0; }
   .dialog { max-height: 88dvh; }

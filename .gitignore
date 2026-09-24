@@ -8,3 +8,4 @@ e2e/playwright-report
 *.jks
 *.keystore
 .env
+e2e/captures/

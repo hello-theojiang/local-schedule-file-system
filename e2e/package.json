@@ -1,0 +1,12 @@
+{
+  "name": "agenda-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Parcours de l'interface avec Playwright contre « agenda serve ».",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

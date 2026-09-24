@@ -242,6 +242,7 @@ function title() {
       const b = a + (isNarrow() ? 3 : 7);
       const A = ymd(a);
       const B = ymd(b - 1);
+      if (isNarrow()) return A.m === B.m ? `${A.d}–${B.d} ${MONTHS_SHORT[A.m - 1]}` : `${A.d} ${MONTHS_SHORT[A.m - 1]} – ${B.d} ${MONTHS_SHORT[B.m - 1]}`;
       if (A.m === B.m) return `${A.d} – ${B.d} ${MONTHS[A.m - 1]} <em>${A.y}</em>`;
       return `${A.d} ${MONTHS_SHORT[A.m - 1]} – ${B.d} ${MONTHS_SHORT[B.m - 1]} <em>${B.y}</em>`;
     }
@@ -279,12 +280,12 @@ app.setView = (v) => {
   app.savePrefs();
   $('#view').dataset.view = '';
   closeSidebar();
-  app.refresh();
+  return app.refresh();
 };
 app.go = (n) => {
   S.cursor = n;
   S.selDay = n;
-  app.refresh();
+  return app.refresh();
 };
 app.step = (k) => {
   if (S.view === 'month') app.go(addMonths(S.cursor, k));
