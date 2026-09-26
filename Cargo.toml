@@ -6,10 +6,10 @@ members = ["crates/agenda-core", "crates/agenda-cli"]
 exclude = ["app/src-tauri"]
 
 [workspace.package]
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
-repository = "https://github.com/hello-theojiang/test"
+repository = "https://github.com/hello-theojiang/local-schedule-file-system"
 rust-version = "1.77"
 
 [profile.release]

@@ -1,6 +1,6 @@
 [package]
 name = "agenda-app"
-version = "0.1.0"
+version = "0.1.1"
 description = "Agenda — enveloppe Tauri 2 (bureau + Android) autour de agenda-core"
 edition = "2021"
 license = "MIT"

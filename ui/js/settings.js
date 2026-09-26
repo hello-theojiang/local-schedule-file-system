@@ -238,8 +238,47 @@ async function openPath(app, path, create) {
   }
 }
 
+// Android : le pont Kotlin renvoie le résultat du sélecteur système via
+// window.__agendaPickedFolder — {path}, {error} ou null (annulé).
+function pickFolderAndroid() {
+  return new Promise((resolve) => {
+    window.__agendaPickedFolder = (r) => {
+      delete window.__agendaPickedFolder;
+      resolve(r);
+    };
+    try {
+      android().pickFolder();
+    } catch (e) {
+      delete window.__agendaPickedFolder;
+      resolve(undefined);
+    }
+  });
+}
+
 export async function chooseFolder(app) {
-  if (app.host.android || !app.host.tauri) return renderOnboarding(app, $('#view'), true);
+  if (app.host.android) {
+    const a = android();
+    if (a && typeof a.pickFolder === 'function') {
+      const r = await pickFolderAndroid();
+      if (r === undefined || (r && r.error)) {
+        if (r && r.error) app.error(r.error);
+        return renderOnboarding(app, $('#view'), true);
+      }
+      if (!r) return;
+      const path = r.path;
+      try {
+        await app.call('open', { path, create: false });
+        await app.opened();
+        app.toast(`Dossier ouvert : ${path}`);
+      } catch (e) {
+        const ok = await app.choose('Nouveau dossier agenda ?', `${e.message}`, [{ label: 'Créer un agenda ici', value: true, primary: true }]);
+        if (ok) await openPath(app, path, true);
+      }
+      return;
+    }
+    return renderOnboarding(app, $('#view'), true);
+  }
+  if (!app.host.tauri) return renderOnboarding(app, $('#view'), true);
   try {
     const path = await app.call('pick_folder');
     if (!path) return;
@@ -267,12 +306,14 @@ export function renderOnboarding(app, el, again = false) {
     <p>Votre agenda est un simple dossier de fichiers Markdown, synchronisé par vos soins (Syncthing…). Choisissez-le, ou créez-en un nouveau.</p>
     ${a && !a.hasStorageAccess() ? `<div class="warn-box">Pour lire le dossier Syncthing, l'application a besoin de l'accès à tous les fichiers.<br><button class="btn primary" data-perm style="margin-top:8px">Autoriser l'accès</button></div>` : ''}
     ${desktop ? `<button class="btn primary" data-pick>${icon('folder')}Choisir le dossier…</button>` : `
+      ${a && typeof a.pickFolder === 'function' ? `<button class="btn primary" data-browse style="margin-bottom:10px">${icon('folder')}Parcourir les dossiers…</button>` : ''}
       <div class="field"><label for="ob-path">Chemin du dossier</label><input id="ob-path" class="input" value="${esc(hi.dir || suggestions[0] || '')}" placeholder="/chemin/vers/agenda" autocapitalize="off" spellcheck="false">
       <div class="suggest">${suggestions.map((s) => `<button data-s="${esc(s)}">${esc(s)}</button>`).join('')}</div></div>
-      <div class="field-row" style="justify-content:center"><button class="btn primary" data-open>Ouvrir</button><button class="btn" data-create>Créer un agenda ici</button></div>`}
+      <div class="field-row" style="justify-content:center"><button class="btn ${a && typeof a.pickFolder === 'function' ? '' : 'primary'}" data-open>Ouvrir</button><button class="btn" data-create>Créer un agenda ici</button></div>`}
     ${again ? '<button class="btn ghost" data-cancel>Annuler</button>' : ''}
   </div></div>`;
   el.querySelector('[data-pick]')?.addEventListener('click', () => chooseFolder(app));
+  el.querySelector('[data-browse]')?.addEventListener('click', () => chooseFolder(app));
   el.querySelector('[data-perm]')?.addEventListener('click', () => {
     a.requestStorageAccess();
     const t = setInterval(() => {
