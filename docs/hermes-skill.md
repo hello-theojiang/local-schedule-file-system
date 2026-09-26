@@ -12,7 +12,7 @@ d'aucun autre accès : ni réseau, ni reste du disque.
 
 ## Installation (une fois, sur le VPS)
 
-1. CLI : `sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-x86_64 && sudo chmod +x /usr/local/bin/agenda`
+1. CLI : `sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-x86_64 && sudo chmod +x /usr/local/bin/agenda`
    (`agenda-linux-aarch64` sur un serveur ARM).
 2. Déclarer le serveur MCP dans `~/.hermes/config.yaml` (fichier
    `vps/hermes-mcp.yaml` de `agenda-extras.tar.gz`) :

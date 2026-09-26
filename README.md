@@ -8,11 +8,11 @@ une application soignée sur Linux, macOS et Android,<br>
 et des outils pensés pour les agents IA.</p>
 
 <p align="center">
-<a href="https://github.com/hello-theojiang/test/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/hello-theojiang/test"></a>
+<a href="https://github.com/hello-theojiang/local-schedule-file-system/releases/latest"><img alt="Dernière version" src="https://img.shields.io/github/v/release/hello-theojiang/local-schedule-file-system"></a>
 <a href="LICENSE-MIT"><img alt="Licence MIT" src="https://img.shields.io/badge/licence-MIT-blue"></a>
 </p>
 
-<p align="center"><a href="INSTALLER.md"><b>Guide d'installation pas à pas</b></a> · <a href="docs/AGENDA.md">Format des fichiers</a> · <a href="docs/hermes-skill.md">Agents (MCP)</a> · <a href="https://github.com/hello-theojiang/test/releases/latest">Toutes les versions</a></p>
+<p align="center"><a href="INSTALLER.md"><b>Guide d'installation pas à pas</b></a> · <a href="docs/AGENDA.md">Format des fichiers</a> · <a href="docs/hermes-skill.md">Agents (MCP)</a> · <a href="https://github.com/hello-theojiang/local-schedule-file-system/releases/latest">Toutes les versions</a></p>
 
 > 🇬🇧 *A French-language, local-first calendar & tasks app: a folder of Markdown+YAML
 > files synced via Syncthing, a Tauri app for Linux/macOS/Android, and an MCP
@@ -20,17 +20,17 @@ et des outils pensés pour les agents IA.</p>
 
 ## Télécharger
 
-Rien à compiler : tout est dans la [dernière Release](https://github.com/hello-theojiang/test/releases/latest).
+Rien à compiler : tout est dans la [dernière Release](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest).
 Guide complet avec captures : [INSTALLER.md](INSTALLER.md).
 
 | Appareil | Fichier | Installation |
 |---|---|---|
-| **Android** (arm64, armv7) | [`agenda.apk`](https://github.com/hello-theojiang/test/releases/latest/download/agenda.apk) | Ouvrir le fichier → autoriser l'installation → **Installer** |
-| **Arch Linux** | [`PKGBUILD`](https://github.com/hello-theojiang/test/releases/latest/download/PKGBUILD) | `makepkg -si` (installe app + CLI + rappels) |
-| **Linux (autres)** | [`.AppImage`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_amd64.AppImage) · [`.deb`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_amd64.deb) | `chmod +x` et lancer, ou installer le paquet |
-| **macOS** (universel) | [`Agenda_universal.dmg`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_universal.dmg) | Clic droit → **Ouvrir** (app non signée Apple) |
-| **CLI** (VPS, serveurs) | [Linux x86_64](https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-x86_64) · [aarch64](https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-aarch64) · [macOS](https://github.com/hello-theojiang/test/releases/latest/download/agenda-macos-arm64) | Binaire statique, aucune dépendance |
-| Vérification | [`SHA256SUMS`](https://github.com/hello-theojiang/test/releases/latest/download/SHA256SUMS) | `sha256sum -c SHA256SUMS --ignore-missing` |
+| **Android** (arm64, armv7) | [`agenda.apk`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda.apk) | Ouvrir le fichier → autoriser l'installation → **Installer** |
+| **Arch Linux** | [`PKGBUILD`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/PKGBUILD) | `makepkg -si` (installe app + CLI + rappels) |
+| **Linux (autres)** | [`.AppImage`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_amd64.AppImage) · [`.deb`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_amd64.deb) | `chmod +x` et lancer, ou installer le paquet |
+| **macOS** (universel) | [`Agenda_universal.dmg`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_universal.dmg) | Clic droit → **Ouvrir** (app non signée Apple) |
+| **CLI** (VPS, serveurs) | [Linux x86_64](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-x86_64) · [aarch64](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-aarch64) · [macOS](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-macos-arm64) | Binaire statique, aucune dépendance |
+| Vérification | [`SHA256SUMS`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/SHA256SUMS) | `sha256sum -c SHA256SUMS --ignore-missing` |
 
 ## Captures
 

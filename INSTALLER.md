@@ -5,14 +5,14 @@ Liens directs (toujours la dernière version) :
 
 | Fichier | Pour |
 |---|---|
-| [`PKGBUILD`](https://github.com/hello-theojiang/test/releases/latest/download/PKGBUILD) | Arch Linux (`makepkg -si`) |
-| [`Agenda_amd64.AppImage`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_amd64.AppImage) · [`Agenda_amd64.deb`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_amd64.deb) | autres Linux |
-| [`Agenda_universal.dmg`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_universal.dmg) | Mac (Apple Silicon et Intel) |
-| [`agenda.apk`](https://github.com/hello-theojiang/test/releases/latest/download/agenda.apk) | Android (arm64, armv7) |
-| [`agenda-linux-x86_64`](https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-x86_64) · [`agenda-linux-aarch64`](https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-aarch64) | CLI Linux statique (VPS) |
-| [`agenda-macos-arm64`](https://github.com/hello-theojiang/test/releases/latest/download/agenda-macos-arm64) · [`agenda-macos-x86_64`](https://github.com/hello-theojiang/test/releases/latest/download/agenda-macos-x86_64) | CLI Mac |
-| [`agenda-extras.tar.gz`](https://github.com/hello-theojiang/test/releases/latest/download/agenda-extras.tar.gz) | unités systemd, LaunchAgent, icônes, déclaration MCP |
-| [`SHA256SUMS`](https://github.com/hello-theojiang/test/releases/latest/download/SHA256SUMS) | sommes de contrôle |
+| [`PKGBUILD`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/PKGBUILD) | Arch Linux (`makepkg -si`) |
+| [`Agenda_amd64.AppImage`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_amd64.AppImage) · [`Agenda_amd64.deb`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_amd64.deb) | autres Linux |
+| [`Agenda_universal.dmg`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_universal.dmg) | Mac (Apple Silicon et Intel) |
+| [`agenda.apk`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda.apk) | Android (arm64, armv7) |
+| [`agenda-linux-x86_64`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-x86_64) · [`agenda-linux-aarch64`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-aarch64) | CLI Linux statique (VPS) |
+| [`agenda-macos-arm64`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-macos-arm64) · [`agenda-macos-x86_64`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-macos-x86_64) | CLI Mac |
+| [`agenda-extras.tar.gz`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-extras.tar.gz) | unités systemd, LaunchAgent, icônes, déclaration MCP |
+| [`SHA256SUMS`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/SHA256SUMS) | sommes de contrôle |
 
 > **Le dépôt doit être public** pour que ces liens marchent sans compte GitHub.
 > Tant qu'il est privé, GitHub répond « 404 » à toute personne non connectée.
@@ -33,7 +33,7 @@ Adaptez à vos chemins.
 2. Récupérer le PKGBUILD et installer (application + CLI + entrée de menu + service de rappels) :
    ```sh
    mkdir -p ~/src/agenda-bin && cd ~/src/agenda-bin
-   curl -LO https://github.com/hello-theojiang/test/releases/latest/download/PKGBUILD
+   curl -LO https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/PKGBUILD
    makepkg -si
    ```
 3. Indiquer le dossier (partagé par l'application, la CLI et le service de rappels) :
@@ -56,7 +56,7 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
 
 ## 2. Mac
 
-1. Télécharger [`Agenda_universal.dmg`](https://github.com/hello-theojiang/test/releases/latest/download/Agenda_universal.dmg), l'ouvrir et glisser **Agenda** dans **Applications**.
+1. Télécharger [`Agenda_universal.dmg`](https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/Agenda_universal.dmg), l'ouvrir et glisser **Agenda** dans **Applications**.
 2. L'application n'est pas signée par Apple. Au premier lancement : **clic droit
    sur Agenda → Ouvrir → Ouvrir**. Si macOS refuse encore (« endommagée ») :
    ```sh
@@ -67,14 +67,14 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
    ```sh
    sudo mkdir -p /usr/local/bin
    ARCH=$( [ "$(uname -m)" = arm64 ] && echo arm64 || echo x86_64 )
-   sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/test/releases/latest/download/agenda-macos-$ARCH
+   sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-macos-$ARCH
    sudo chmod +x /usr/local/bin/agenda
    sudo xattr -d com.apple.quarantine /usr/local/bin/agenda 2>/dev/null; agenda --version
    ```
 5. Rappels application fermée (LaunchAgent) :
    ```sh
    mkdir -p ~/.config/agenda && echo "dir=$HOME/Sync/agenda" > ~/.config/agenda/config
-   curl -L https://github.com/hello-theojiang/test/releases/latest/download/agenda-extras.tar.gz | tar xz -C /tmp
+   curl -L https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-extras.tar.gz | tar xz -C /tmp
    cp /tmp/agenda-extras/launchd/dev.localfirst.agenda.remind.plist ~/Library/LaunchAgents/
    launchctl load -w ~/Library/LaunchAgents/dev.localfirst.agenda.remind.plist
    ```
@@ -84,7 +84,7 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
 ## 3. Téléphone Android
 
 1. Sur le téléphone, ouvrir ce lien et télécharger l'APK :
-   <https://github.com/hello-theojiang/test/releases/latest/download/agenda.apk>
+   <https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda.apk>
 2. Ouvrir le fichier. Android demande d'**autoriser l'installation depuis cette
    source** (navigateur ou gestionnaire de fichiers) : accepter, puis **Installer**.
 3. Ouvrir **Agenda** → **Autoriser l'accès** → activer **« Autoriser l'accès pour
@@ -109,7 +109,7 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
 1. CLI statique (aucune dépendance) :
    ```sh
    ARCH=$(uname -m)   # x86_64 ou aarch64
-   sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/test/releases/latest/download/agenda-linux-$ARCH
+   sudo curl -Lo /usr/local/bin/agenda https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-linux-$ARCH
    sudo chmod +x /usr/local/bin/agenda && agenda --version
    ```
 2. Le dossier synchronisé par Syncthing (remplacer `<user>`) :
@@ -124,7 +124,7 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
    ```
 4. Service permanent :
    ```sh
-   curl -L https://github.com/hello-theojiang/test/releases/latest/download/agenda-extras.tar.gz | tar xz -C /tmp
+   curl -L https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/agenda-extras.tar.gz | tar xz -C /tmp
    sudo cp /tmp/agenda-extras/vps/agenda-remind-ntfy.service /etc/systemd/system/
    sudo nano /etc/systemd/system/agenda-remind-ntfy.service   # <user>, sujet ntfy, TZ
    sudo systemctl daemon-reload && sudo systemctl enable --now agenda-remind-ntfy
@@ -143,6 +143,6 @@ Variante sans paquet : télécharger `Agenda_amd64.AppImage`, puis
 ## Vérifier un téléchargement
 
 ```sh
-curl -LO https://github.com/hello-theojiang/test/releases/latest/download/SHA256SUMS
+curl -LO https://github.com/hello-theojiang/local-schedule-file-system/releases/latest/download/SHA256SUMS
 sha256sum -c SHA256SUMS --ignore-missing
 ```

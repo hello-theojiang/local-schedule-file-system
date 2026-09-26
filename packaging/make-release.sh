@@ -21,7 +21,7 @@ sed -e "s/^pkgver=.*/pkgver=$ver/" \
 (cd "$dist" && sha256sum -- * > SHA256SUMS)
 ls -l "$dist"
 
-repo=${GITHUB_REPOSITORY:-hello-theojiang/test}
+repo=${GITHUB_REPOSITORY:-hello-theojiang/local-schedule-file-system}
 {
   echo "## Agenda $tag"
   echo

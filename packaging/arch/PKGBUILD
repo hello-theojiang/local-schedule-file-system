@@ -2,11 +2,11 @@
 # PKGBUILD depuis les sources (compile la CLI et l'application Tauri).
 # Pour installer sans compiler, préférez ../arch-bin/PKGBUILD.
 pkgname=agenda
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Agenda et tâches local-first (Markdown + YAML) : app de bureau Tauri et CLI"
 arch=('x86_64' 'aarch64')
-url="https://github.com/hello-theojiang/test"
+url="https://github.com/hello-theojiang/local-schedule-file-system"
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
 makedepends=('rust' 'cargo' 'nodejs' 'npm')

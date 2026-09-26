@@ -2,11 +2,11 @@
 # PKGBUILD « -bin » : télécharge l'app (compilée dans Arch Linux par la CI) et la CLI
 # statique depuis la Release GitHub. Installation : makepkg -si
 pkgname=agenda-bin
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="Agenda et tâches local-first (Markdown + YAML) : app de bureau Tauri et CLI"
 arch=('x86_64')
-url="https://github.com/hello-theojiang/test"
+url="https://github.com/hello-theojiang/local-schedule-file-system"
 license=('MIT')
 depends=('webkit2gtk-4.1' 'gtk3')
 optdepends=('libnotify: rappels via notify-send (agenda remind)'
