@@ -1,0 +1,38 @@
+# Maintainer: <user>
+# PKGBUILD « -bin » : télécharge l'app (compilée dans Arch Linux par la CI) et la CLI
+# statique depuis la Release GitHub. Installation : makepkg -si
+pkgname=agenda-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Agenda et tâches local-first (Markdown + YAML) : app de bureau Tauri et CLI"
+arch=('x86_64')
+url="https://github.com/hello-theojiang/test"
+license=('MIT')
+depends=('webkit2gtk-4.1' 'gtk3')
+optdepends=('libnotify: rappels via notify-send (agenda remind)'
+            'curl: abonnements iCalendar et envoi vers ntfy')
+provides=('agenda')
+conflicts=('agenda')
+options=('!strip' '!debug')
+_rel="$url/releases/download/v$pkgver"
+source=("agenda-app-$pkgver::$_rel/agenda-app-linux-x86_64"
+        "agenda-cli-$pkgver::$_rel/agenda-linux-x86_64"
+        "agenda-extras-$pkgver.tar.gz::$_rel/agenda-extras.tar.gz")
+# Le PKGBUILD joint à chaque Release contient les sommes réelles.
+sha256sums=('SKIP' 'SKIP' 'SKIP')
+
+package() {
+  install -Dm755 "agenda-app-$pkgver" "$pkgdir/usr/bin/agenda-app"
+  install -Dm755 "agenda-cli-$pkgver" "$pkgdir/usr/bin/agenda"
+  cd agenda-extras
+  install -Dm644 agenda.desktop "$pkgdir/usr/share/applications/agenda.desktop"
+  for s in 32 128 256 512; do
+    install -Dm644 "icons/$s.png" "$pkgdir/usr/share/icons/hicolor/${s}x${s}/apps/agenda.png"
+  done
+  install -Dm644 icons/agenda.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/agenda.svg"
+  install -Dm644 systemd/agenda-remind.service "$pkgdir/usr/lib/systemd/user/agenda-remind.service"
+  install -Dm644 systemd/agenda-serve.service "$pkgdir/usr/lib/systemd/user/agenda-serve.service"
+  [ -f AGENDA.md ] && install -Dm644 AGENDA.md "$pkgdir/usr/share/doc/agenda/AGENDA.md"
+  [ -f LICENSE-MIT ] && install -Dm644 LICENSE-MIT "$pkgdir/usr/share/licenses/agenda-bin/LICENSE-MIT"
+  true
+}

@@ -1,0 +1,13 @@
+# Service utilisateur optionnel : interface web et flux /agenda.ics sur 127.0.0.1:8421.
+# Activation : systemctl --user enable --now agenda-serve
+[Unit]
+Description=Agenda — interface web et flux iCalendar (local)
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/agenda serve --addr 127.0.0.1:8421
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

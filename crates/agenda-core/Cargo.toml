@@ -1,0 +1,11 @@
+[package]
+name = "agenda-core"
+description = "Cœur de l'agenda local-first : fichiers Markdown/YAML, RRULE, iCalendar, langage naturel. Zéro dépendance."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Volontairement vide : le cœur n'utilise que la bibliothèque standard.

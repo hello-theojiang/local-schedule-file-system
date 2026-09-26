@@ -1,0 +1,28 @@
+# VPS : rappels envoyés sur ntfy. À placer dans /etc/systemd/system/.
+# Remplacez <user> et le sujet ntfy (choisissez un sujet long et imprévisible).
+[Unit]
+Description=Rappels de l'agenda vers ntfy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=<user>
+Environment=AGENDA_DIR=/home/<user>/agenda
+# Heures « murales » des fichiers : fuseau de l'utilisateur, pas celui du serveur.
+Environment=TZ=Europe/Paris
+ExecStart=/usr/local/bin/agenda remind --ntfy https://ntfy.sh/agenda-CHANGEZ-MOI
+Restart=on-failure
+RestartSec=30
+# Durcissement : le service ne voit que le dossier agenda en écriture.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/<user>/agenda
+PrivateTmp=true
+# État local (dernier rappel envoyé, journal d'annulation) : /var/lib/agenda
+StateDirectory=agenda
+Environment=XDG_STATE_HOME=/var/lib
+
+[Install]
+WantedBy=multi-user.target
